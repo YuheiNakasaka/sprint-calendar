@@ -203,9 +203,6 @@ export function getNextNSprints(startDate: Date, devDays: number, qaDays: number
   let currentStartDate = new Date(startDate);
   
   for (let i = 0; i < count; i++) {
-    // スプリント開始曜日を取得
-    const startDayOfWeek = getDayOfWeek(currentStartDate);
-    
     // スプリント期間を計算
     const period = calculateSprintPeriods(currentStartDate, devDays, qaDays);
     periods.push(period);

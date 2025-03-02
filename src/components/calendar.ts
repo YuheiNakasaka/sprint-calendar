@@ -6,17 +6,15 @@
  */
 import { 
   getFirstDayOfMonth, 
-  getLastDayOfMonth, 
   getDaysInMonth, 
   getDayOfWeek, 
   createDate, 
   isToday, 
   getMonthName,
-  getDayOfWeekName,
-  formatDate
+  getDayOfWeekName
 } from '../lib/date-utils';
 import { CalendarConfig } from '../lib/params';
-import { SprintPeriod, getAllPeriodsForDate, PeriodType, PeriodInfo } from '../lib/sprint-calc';
+import { SprintPeriod, getAllPeriodsForDate, PeriodInfo } from '../lib/sprint-calc';
 
 /**
  * カレンダーの日を表すインターフェース
@@ -45,7 +43,6 @@ export interface CalendarMonth {
  */
 function generateCalendarMonth(year: number, month: number, sprintPeriods: SprintPeriod[]): CalendarMonth {
   const firstDay = getFirstDayOfMonth(createDate(year, month));
-  const lastDay = getLastDayOfMonth(firstDay);
   const daysInMonth = getDaysInMonth(firstDay);
   const firstDayOfWeek = getDayOfWeek(firstDay);
   

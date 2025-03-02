@@ -16,7 +16,7 @@
  */
 import './styles/main.css';
 import { parseUrlParams, generateUrlWithParams } from './lib/params';
-import { calculateSprintPeriods, getNextNSprints, getPreviousNSprints, getNearestDayOfWeek } from './lib/sprint-calc';
+import { getNextNSprints, getPreviousNSprints, getNearestDayOfWeek } from './lib/sprint-calc';
 import { generateCalendarMonths, renderCalendar } from './components/calendar';
 import { renderLegend } from './components/legend';
 
@@ -39,7 +39,6 @@ function initApp() {
   
   // スプリント期間の計算
   // 現在の日付から過去と未来のスプリント期間を計算
-  const centerDate = config.centerDate || new Date();
   const sprintCycleLength = config.developmentDays + config.qaDays + 1; // 開発期間 + QA期間 + リリース日
   
   // 表示する月数に必要なスプリント数を概算（前後の月も含める）
