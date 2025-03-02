@@ -12,7 +12,19 @@
 - 今日の日付が特別な色で強調表示される
 - 今日の日付の月が表示月数の真ん中になるように表示
 - 月をまたぐスプリント表示に対応
+- 同じ日付に複数のスプリント期間を表示可能
+  - 開発期間とQA期間が重なる場合の視覚的な表現（縦分割表示）
+  - スプリントIDによる期間の識別（リリース日ベース：YYYY/MM/DD形式）
+  - ホバー時のツールチップでスプリント詳細を表示
+  - 期間の重なり順序の最適化（開発→QA→リリースの順）
+- スプリント期間の計算
+  - 次のスプリート開始は現在のスプリントの開発期間の半分の時点
+  - リリース日はQA期間終了後の直近のスプリント開始曜日
+  - 過去/未来のスプリート計算時も期間の重なりを考慮
 - レスポンシブデザインによる様々なデバイスでの閲覧対応
+  - モバイル端末での長押しによるスプリント詳細表示
+  - 画面サイズに応じた最適な表示レイアウト
+  - 複数期間の視認性を確保した表示サイズの調整
 
 ## 技術スタック
 
@@ -66,9 +78,10 @@ sprint-calendar/
 
 ### 1. スプリント期間計算モジュール
 
-スプリントの開始日から各期間（開発期間、QA期間、リリース日）を計算するロジックを提供します。
+スプリントの開始日から各期間（開発期間、QA期間、リリース日）を計算し、期間の重なりを管理するロジックを提供します。
 
 ```typescript
+// スプリント期間の基本情報
 interface SprintPeriod {
   developmentStart: Date;
   developmentEnd: Date;
@@ -76,12 +89,41 @@ interface SprintPeriod {
   qaEnd: Date;
   releaseDate: Date;
   nextSprintStart: Date;
+  sprintId?: string; // リリース日ベースのスプリント識別子
 }
 
+// 特定の日付における期間情報
+interface PeriodInfo {
+  type: 'development' | 'qa' | 'release' | 'none';
+  sprintId: string;
+  startDate: Date;
+}
+
+// スプリント期間の計算
 function calculateSprintPeriods(startDate: Date, devDays: number, qaDays: number): SprintPeriod;
+
+// 複数スプリントの取得（期間の重なりを考慮）
 function getNextNSprints(startDate: Date, devDays: number, qaDays: number, count: number): SprintPeriod[];
-function getCurrentPeriodType(date: Date, sprintPeriod: SprintPeriod): 'development' | 'qa' | 'release' | 'none';
+function getPreviousNSprints(startDate: Date, devDays: number, qaDays: number, count: number): SprintPeriod[];
+
+// 日付ごとの期間情報の取得
+function getAllPeriodsForDate(date: Date, sprintPeriods: SprintPeriod[]): PeriodInfo[];
 ```
+
+#### 期間計算の仕組み
+
+1. スプリントの開始
+   - 各スプリントは前のスプリントの開発期間の半分の時点で開始
+   - これにより自然な形で期間の重なりが発生
+
+2. リリース日の決定
+   - QA期間終了後の直近のスプリント開始曜日をリリース日に設定
+   - リリース日は必ずスプリント開始曜日と同じ曜日
+
+3. 期間の重なり管理
+   - 同じ日に複数の期間が存在する場合は優先順位付けて表示
+   - 開発期間 → QA期間 → リリース の順で表示
+   - 各期間にスプリントIDを付与して識別可能に
 
 ### 2. URLパラメータ処理モジュール
 
@@ -104,10 +146,16 @@ function generateUrlWithParams(config: CalendarConfig): string;
 月ごとのカレンダーを生成し、各日付のスプリント期間タイプを視覚的に表示します。
 
 ```typescript
+interface PeriodInfo {
+  type: 'development' | 'qa' | 'release' | 'none';
+  sprintId: string;
+  startDate: Date;
+}
+
 interface CalendarDay {
   date: Date;
   isToday: boolean;
-  periodType: 'development' | 'qa' | 'release' | 'none';
+  periods: PeriodInfo[]; // 複数の期間を保持
 }
 
 interface CalendarMonth {
@@ -116,8 +164,12 @@ interface CalendarMonth {
   days: CalendarDay[];
 }
 
+// カレンダー生成と表示
 function generateCalendarMonths(config: CalendarConfig, periods: SprintPeriod[]): CalendarMonth[];
 function renderCalendar(container: HTMLElement, months: CalendarMonth[]): void;
+
+// 期間計算
+function getAllPeriodsForDate(date: Date, sprintPeriods: SprintPeriod[]): PeriodInfo[];
 ```
 
 ## データフロー
@@ -128,15 +180,19 @@ function renderCalendar(container: HTMLElement, months: CalendarMonth[]): void;
 
 2. スプリント期間の計算
    - 設定に基づいて複数のスプリント期間を計算
-   - 現在の日付がどの期間に該当するかを判定
+   - 各日付に対して該当する全ての期間を取得
+   - スプリントIDを割り当てて期間を識別
 
 3. カレンダーの生成
    - 表示する月数分のカレンダーデータを生成
-   - 各日付にスプリント期間タイプを割り当て
+   - 各日付に複数の期間情報を割り当て
+   - 期間の重なりを考慮したデータ構造の構築
 
 4. UI表示
    - カレンダーをレンダリング
+   - 複数期間の視覚的な表現（縦分割表示）
    - 期間タイプごとに色分け
+   - スプリントIDのツールチップ表示
    - 今日の日付を強調表示
    - 凡例を表示
 

@@ -151,11 +151,13 @@ button:hover {
 
 .day {
   position: relative;
-  height: 40px;
+  height: 60px;
   padding: 5px;
   text-align: center;
   border-right: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
 }
 
 .day:nth-child(7n) {
@@ -164,18 +166,6 @@ button:hover {
 
 .day.empty {
   background-color: #f9f9f9;
-}
-
-.day.development {
-  background-color: rgba(76, 175, 80, 0.2);
-}
-
-.day.qa {
-  background-color: rgba(33, 150, 243, 0.2);
-}
-
-.day.release {
-  background-color: rgba(244, 67, 54, 0.2);
 }
 
 .day.today {
@@ -195,6 +185,47 @@ button:hover {
 
 .day-number {
   font-size: 0.9em;
+  margin-bottom: 2px;
+}
+
+.periods {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.period {
+  flex: 1;
+  border-radius: 2px;
+  position: relative;
+}
+
+.period.development {
+  background-color: rgba(76, 175, 80, 0.2);
+}
+
+.period.qa {
+  background-color: rgba(33, 150, 243, 0.2);
+}
+
+.period.release {
+  background-color: rgba(244, 67, 54, 0.2);
+}
+
+.period:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  white-space: nowrap;
+  z-index: 1;
 }
 
 footer {
@@ -215,6 +246,21 @@ footer {
   }
   
   .day {
-    height: 35px;
+    height: 50px;
+  }
+
+  .period {
+    font-size: 0.7em;
+  }
+
+  .period:hover::after {
+    display: none; /* モバイルではツールチップを非表示 */
+  }
+
+  /* モバイルでは長押しでツールチップを表示 */
+  .period:active::after {
+    display: block;
+    font-size: 0.9em;
+    padding: 6px 10px;
   }
 }

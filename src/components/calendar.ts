@@ -12,7 +12,7 @@ import {
   getDayOfWeekName
 } from '../lib/date-utils';
 import { CalendarConfig } from '../lib/params';
-import { SprintPeriod, getPeriodTypeForDate, PeriodType } from '../lib/sprint-calc';
+import { SprintPeriod, getAllPeriodsForDate, PeriodType, PeriodInfo } from '../lib/sprint-calc';
 
 /**
  * カレンダーの日を表すインターフェース
@@ -20,7 +20,7 @@ import { SprintPeriod, getPeriodTypeForDate, PeriodType } from '../lib/sprint-ca
 export interface CalendarDay {
   date: Date;
   isToday: boolean;
-  periodType: PeriodType;
+  periods: PeriodInfo[];
 }
 
 /**
@@ -52,7 +52,7 @@ function generateCalendarMonth(year: number, month: number, sprintPeriods: Sprin
     days.push({
       date: new Date(0), // ダミーの日付
       isToday: false,
-      periodType: 'none'
+      periods: []
     });
   }
   
@@ -62,7 +62,7 @@ function generateCalendarMonth(year: number, month: number, sprintPeriods: Sprin
     days.push({
       date,
       isToday: isToday(date),
-      periodType: getPeriodTypeForDate(date, sprintPeriods)
+      periods: getAllPeriodsForDate(date, sprintPeriods)
     });
   }
   
@@ -169,10 +169,6 @@ export function renderCalendar(container: HTMLElement, months: CalendarMonth[]):
       // 日付のクラスを設定
       let className = 'day';
       
-      if (day.periodType !== 'none') {
-        className += ` ${day.periodType}`;
-      }
-      
       if (day.isToday) {
         className += ' today';
       }
@@ -184,6 +180,22 @@ export function renderCalendar(container: HTMLElement, months: CalendarMonth[]):
       dayNumberElement.className = 'day-number';
       dayNumberElement.textContent = day.date.getDate().toString();
       dayElement.appendChild(dayNumberElement);
+
+      // 期間を表示
+      if (day.periods.length > 0) {
+        const periodsElement = document.createElement('div');
+        periodsElement.className = 'periods';
+        
+        day.periods.forEach(period => {
+          const periodElement = document.createElement('div');
+          periodElement.className = `period ${period.type}`;
+          periodElement.setAttribute('data-sprint-id', period.sprintId);
+          periodElement.setAttribute('title', `${period.type.toUpperCase()} - ${period.sprintId}`);
+          periodsElement.appendChild(periodElement);
+        });
+        
+        dayElement.appendChild(periodsElement);
+      }
       
       daysElement.appendChild(dayElement);
     });
