@@ -1,6 +1,6 @@
 import './styles/main.css';
 import { parseUrlParams, generateUrlWithParams } from './lib/params';
-import { calculateSprintPeriods, getNextNSprints, getPreviousNSprints } from './lib/sprint-calc';
+import { calculateSprintPeriods, getNextNSprints, getPreviousNSprints, getNearestDayOfWeek } from './lib/sprint-calc';
 import { generateCalendarMonths, renderCalendar } from './components/calendar';
 import { renderLegend } from './components/legend';
 
@@ -11,12 +11,12 @@ function initApp() {
   const config = parseUrlParams(url);
   
   // フォームの初期値を設定
-  const startDateInput = document.getElementById('start-date') as HTMLInputElement;
+  const startDaySelect = document.getElementById('start-day') as HTMLSelectElement;
   const devDaysInput = document.getElementById('dev-days') as HTMLInputElement;
   const qaDaysInput = document.getElementById('qa-days') as HTMLInputElement;
   const displayMonthsInput = document.getElementById('display-months') as HTMLInputElement;
   
-  startDateInput.value = config.startDate.toISOString().split('T')[0];
+  startDaySelect.value = config.startDayOfWeek.toString();
   devDaysInput.value = config.developmentDays.toString();
   qaDaysInput.value = config.qaDays.toString();
   displayMonthsInput.value = config.displayMonths.toString();
@@ -29,9 +29,12 @@ function initApp() {
   // 表示する月数に必要なスプリント数を概算（前後の月も含める）
   const requiredSprints = Math.ceil(config.displayMonths * 31 / sprintCycleLength) * 2;
   
+  // 指定された曜日の直近の日付を計算
+  const startDate = getNearestDayOfWeek(config.startDayOfWeek);
+  
   // 過去のスプリント期間を計算
   const pastSprintPeriods = getPreviousNSprints(
-    config.startDate,
+    startDate,
     config.developmentDays,
     config.qaDays,
     requiredSprints
@@ -39,7 +42,7 @@ function initApp() {
   
   // 未来のスプリント期間を計算
   const futureSprintPeriods = getNextNSprints(
-    config.startDate,
+    startDate,
     config.developmentDays,
     config.qaDays,
     requiredSprints
@@ -71,7 +74,7 @@ function initApp() {
       
       // フォームの値を取得
       const newConfig = {
-        startDate: new Date(startDateInput.value),
+        startDayOfWeek: parseInt(startDaySelect.value, 10),
         developmentDays: parseInt(devDaysInput.value, 10),
         qaDays: parseInt(qaDaysInput.value, 10),
         displayMonths: parseInt(displayMonthsInput.value, 10),

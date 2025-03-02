@@ -7,7 +7,7 @@ import { formatDate, parseDate } from './date-utils';
  * カレンダー設定を表すインターフェース
  */
 export interface CalendarConfig {
-  startDate: Date;       // スプリント開始日
+  startDayOfWeek: number; // スプリント開始曜日（0: 日曜日, 1: 月曜日, ..., 6: 土曜日）
   developmentDays: number; // 開発期間の日数
   qaDays: number;        // QA期間の日数
   displayMonths: number; // 表示する月数
@@ -18,7 +18,7 @@ export interface CalendarConfig {
  * デフォルトのカレンダー設定
  */
 const DEFAULT_CONFIG: CalendarConfig = {
-  startDate: new Date(), // 今日を開始日とする
+  startDayOfWeek: 1,     // デフォルトは月曜日
   developmentDays: 10,   // デフォルトの開発期間は10日
   qaDays: 5,             // デフォルトのQA期間は5日
   displayMonths: 3,      // デフォルトの表示月数は3ヶ月
@@ -33,14 +33,15 @@ const DEFAULT_CONFIG: CalendarConfig = {
 export function parseUrlParams(url: URL): CalendarConfig {
   const params = url.searchParams;
   
-  // 開始日のパラメータを取得
-  let startDate = DEFAULT_CONFIG.startDate;
-  const startParam = params.get('start');
-  if (startParam) {
-    try {
-      startDate = parseDate(startParam);
-    } catch (e) {
-      console.error('Invalid start date format:', startParam);
+  // 開始曜日のパラメータを取得
+  let startDayOfWeek = DEFAULT_CONFIG.startDayOfWeek;
+  const startDayParam = params.get('startDay');
+  if (startDayParam) {
+    const day = parseInt(startDayParam, 10);
+    if (!isNaN(day) && day >= 0 && day <= 6) {
+      startDayOfWeek = day;
+    } else {
+      console.error('Invalid start day of week:', startDayParam);
     }
   }
   
@@ -92,7 +93,7 @@ export function parseUrlParams(url: URL): CalendarConfig {
   }
   
   return {
-    startDate,
+    startDayOfWeek,
     developmentDays,
     qaDays,
     displayMonths,
@@ -111,8 +112,8 @@ export function generateUrlWithParams(config: CalendarConfig): string {
   // 現在のURLパラメータをクリア
   url.search = '';
   
-  // 開始日のパラメータを設定
-  url.searchParams.set('start', formatDate(config.startDate));
+  // 開始曜日のパラメータを設定
+  url.searchParams.set('startDay', config.startDayOfWeek.toString());
   
   // 開発期間のパラメータを設定
   url.searchParams.set('dev', config.developmentDays.toString());

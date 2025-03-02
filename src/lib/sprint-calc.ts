@@ -1,7 +1,40 @@
 /**
  * スプリント期間計算モジュール
  */
-import { addDays, isSameDay } from './date-utils';
+import { addDays, isSameDay, getDayOfWeek } from './date-utils';
+
+/**
+ * 指定された曜日の直近の日付を計算する
+ * @param dayOfWeek 曜日（0: 日曜日, 1: 月曜日, ..., 6: 土曜日）
+ * @param baseDate 基準日（指定しない場合は今日）
+ * @param future 未来の日付を取得するかどうか（falseの場合は過去または今日）
+ * @returns 指定された曜日の直近の日付
+ */
+export function getNearestDayOfWeek(dayOfWeek: number, baseDate: Date = new Date(), future: boolean = false): Date {
+  const result = new Date(baseDate);
+  const currentDayOfWeek = getDayOfWeek(result);
+  
+  if (currentDayOfWeek === dayOfWeek && !future) {
+    // 今日が指定された曜日で、過去または今日の日付を求める場合は今日を返す
+    return result;
+  }
+  
+  let daysToAdd: number;
+  
+  if (future) {
+    // 未来の日付を求める場合
+    daysToAdd = (dayOfWeek + 7 - currentDayOfWeek) % 7;
+    if (daysToAdd === 0) {
+      daysToAdd = 7; // 同じ曜日の場合は次の週
+    }
+  } else {
+    // 過去の日付を求める場合
+    daysToAdd = (dayOfWeek - currentDayOfWeek + 7) % 7;
+    daysToAdd = daysToAdd === 0 ? 0 : daysToAdd - 7; // 同じ曜日の場合は今日
+  }
+  
+  return addDays(result, daysToAdd);
+}
 
 /**
  * スプリント期間を表すインターフェース
@@ -37,11 +70,18 @@ export function calculateSprintPeriods(startDate: Date, devDays: number, qaDays:
   // QA期間の終了日はQA開始日 + QA日数 - 1
   const qaEnd = addDays(qaStart, qaDays - 1);
   
-  // リリース日はQA期間の終了日の翌日
-  const releaseDate = addDays(qaEnd, 1);
+  // スプリント開始曜日を取得
+  const startDayOfWeek = getDayOfWeek(startDate);
   
-  // 次のスプリント開始日はリリース日の翌日
-  const nextSprintStart = addDays(releaseDate, 1);
+  // QA期間終了後の次のスプリント開始曜日の日付を計算
+  const dayAfterQaEnd = addDays(qaEnd, 1);
+  const daysToNextStartDay = (startDayOfWeek - getDayOfWeek(dayAfterQaEnd) + 7) % 7;
+  
+  // リリース日はスプリント開始曜日と同じ曜日
+  const releaseDate = addDays(dayAfterQaEnd, daysToNextStartDay);
+  
+  // 次のスプリント開始日はリリース日と同じ日
+  const nextSprintStart = releaseDate;
   
   return {
     developmentStart: startDate,
@@ -85,20 +125,21 @@ export function getNextNSprints(startDate: Date, devDays: number, qaDays: number
 export function getPreviousNSprints(startDate: Date, devDays: number, qaDays: number, count: number): SprintPeriod[] {
   const periods: SprintPeriod[] = [];
   
-  // スプリント1サイクルの日数
-  const sprintCycleLength = devDays + qaDays + 1; // 開発期間 + QA期間 + リリース日
-  
   // 基準日から1サイクル前のスプリント開始日を計算
+  // スプリント開始曜日を取得
+  const startDayOfWeek = getDayOfWeek(startDate);
+  
+  // 1週間前の同じ曜日を取得
   let currentStartDate = new Date(startDate);
-  currentStartDate.setDate(currentStartDate.getDate() - sprintCycleLength);
+  currentStartDate.setDate(currentStartDate.getDate() - 7);
   
   for (let i = 0; i < count; i++) {
     const period = calculateSprintPeriods(currentStartDate, devDays, qaDays);
     periods.unshift(period); // 配列の先頭に追加して時系列順にする
     
-    // 前のスプリントの開始日を計算
+    // 前のスプリントの開始日を計算（1週間前の同じ曜日）
     currentStartDate = new Date(currentStartDate);
-    currentStartDate.setDate(currentStartDate.getDate() - sprintCycleLength);
+    currentStartDate.setDate(currentStartDate.getDate() - 7);
   }
   
   return periods;

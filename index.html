@@ -16,8 +16,16 @@
     <div class="settings-panel">
       <form id="settings-form">
         <div class="form-group">
-          <label for="start-date">スプリント開始日:</label>
-          <input type="date" id="start-date" name="start-date" required>
+          <label for="start-day">スプリント開始曜日:</label>
+          <select id="start-day" name="start-day" required>
+            <option value="0">日曜日</option>
+            <option value="1">月曜日</option>
+            <option value="2">火曜日</option>
+            <option value="3">水曜日</option>
+            <option value="4">木曜日</option>
+            <option value="5">金曜日</option>
+            <option value="6">土曜日</option>
+          </select>
         </div>
         <div class="form-group">
           <label for="dev-days">開発期間（日数）:</label>
