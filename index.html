@@ -13,35 +13,6 @@
 <body>
   <header>
     <h1>スプリント早わかりカレンダー</h1>
-    <div class="settings-panel">
-      <form id="settings-form">
-        <div class="form-group">
-          <label for="start-day">スプリント開始曜日:</label>
-          <select id="start-day" name="start-day" required>
-            <option value="0">日曜日</option>
-            <option value="1">月曜日</option>
-            <option value="2">火曜日</option>
-            <option value="3">水曜日</option>
-            <option value="4">木曜日</option>
-            <option value="5">金曜日</option>
-            <option value="6">土曜日</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="dev-days">開発期間（日数）:</label>
-          <input type="number" id="dev-days" name="dev-days" min="1" max="30" required>
-        </div>
-        <div class="form-group">
-          <label for="qa-days">QA期間（日数）:</label>
-          <input type="number" id="qa-days" name="qa-days" min="1" max="30" required>
-        </div>
-        <div class="form-group">
-          <label for="display-months">表示月数:</label>
-          <input type="number" id="display-months" name="display-months" min="1" max="12" value="3" required>
-        </div>
-        <button type="submit">適用</button>
-      </form>
-    </div>
   </header>
 
   <main>
@@ -70,6 +41,36 @@
 
     <section id="calendar-container" class="calendar-container">
       <!-- カレンダーがここに動的に生成されます -->
+    </section>
+
+    <section class="settings-panel">
+      <form id="settings-form">
+        <div class="form-group">
+          <label for="start-day">スプリント開始曜日:</label>
+          <select id="start-day" name="start-day" required>
+            <option value="0">日曜日</option>
+            <option value="1">月曜日</option>
+            <option value="2">火曜日</option>
+            <option value="3">水曜日</option>
+            <option value="4">木曜日</option>
+            <option value="5">金曜日</option>
+            <option value="6">土曜日</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="dev-days">開発期間（日数）:</label>
+          <input type="number" id="dev-days" name="dev-days" min="1" max="30" required>
+        </div>
+        <div class="form-group">
+          <label for="qa-days">QA期間（日数）:</label>
+          <input type="number" id="qa-days" name="qa-days" min="1" max="30" required>
+        </div>
+        <div class="form-group">
+          <label for="display-months">表示月数:</label>
+          <input type="number" id="display-months" name="display-months" min="1" max="12" value="3" required>
+        </div>
+        <button type="submit">適用</button>
+      </form>
     </section>
   </main>
 
