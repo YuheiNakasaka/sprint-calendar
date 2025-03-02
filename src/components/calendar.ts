@@ -1,5 +1,8 @@
 /**
  * カレンダー表示コンポーネント
+ * 
+ * このコンポーネントは、スプリント期間情報を元にカレンダーを生成し、
+ * 各日付のスプリント期間タイプを視覚的に表示します。
  */
 import { 
   getFirstDayOfMonth, 
@@ -9,7 +12,8 @@ import {
   createDate, 
   isToday, 
   getMonthName,
-  getDayOfWeekName
+  getDayOfWeekName,
+  formatDate
 } from '../lib/date-utils';
 import { CalendarConfig } from '../lib/params';
 import { SprintPeriod, getAllPeriodsForDate, PeriodType, PeriodInfo } from '../lib/sprint-calc';
@@ -190,7 +194,7 @@ export function renderCalendar(container: HTMLElement, months: CalendarMonth[]):
           const periodElement = document.createElement('div');
           periodElement.className = `period ${period.type}`;
           periodElement.setAttribute('data-sprint-id', period.sprintId);
-          periodElement.setAttribute('title', `${period.type.toUpperCase()} - ${period.sprintId}`);
+          periodElement.setAttribute('title', period.tooltip);
           periodsElement.appendChild(periodElement);
         });
         

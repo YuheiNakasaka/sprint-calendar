@@ -1,5 +1,18 @@
 /**
  * スプリント期間計算モジュール
+ * 
+ * このモジュールは、スプリントの期間（開発期間、QA期間、リリース日）を計算するための
+ * 関数を提供します。
+ * 
+ * 例：開発期間が7日間、QA期間も7日間、スプリント開始曜日が火曜日の場合
+ * - 2025/03/11(火)リリースのスプリント
+ *   - 2025/02/25(火)に開発を開始すると2025/03/03(月)までは開発期間
+ *   - 2025/03/04(火)からQA期間が開始され2025/03/10(月)まではQA期間
+ *   - 2025/03/11(火)がリリース日
+ * - 2025/03/18(火)リリースのスプリント
+ *   - 2025/03/04(火)に開発を開始すると2025/03/10(月)までは開発期間
+ *   - 2025/03/11(火)からQA期間が開始され2025/03/17(月)まではQA期間
+ *   - 2025/03/18(火)がリリース日
  */
 import { addDays, isSameDay, getDayOfWeek } from './date-utils';
 
@@ -39,13 +52,12 @@ export function getNearestDayOfWeek(dayOfWeek: number, baseDate: Date = new Date
  * スプリント期間を表すインターフェース
  */
 export interface SprintPeriod {
-  developmentStart: Date;
-  developmentEnd: Date;
-  qaStart: Date;
-  qaEnd: Date;
-  releaseDate: Date;
-  nextSprintStart: Date;
-  sprintId?: string; // スプリントを識別するためのID
+  developmentStart: Date;  // 開発期間の開始日
+  developmentEnd: Date;    // 開発期間の終了日
+  qaStart: Date;           // QA期間の開始日
+  qaEnd: Date;             // QA期間の終了日
+  releaseDate: Date;       // リリース日
+  sprintId: string;        // スプリントを識別するためのID（リリース日ベース）
 }
 
 /**
@@ -57,9 +69,10 @@ export type PeriodType = 'development' | 'qa' | 'release' | 'none';
  * 期間情報を表すインターフェース
  */
 export interface PeriodInfo {
-  type: PeriodType;
-  sprintId: string;
-  startDate: Date;
+  type: PeriodType;        // 期間タイプ
+  sprintId: string;        // スプリントID
+  releaseDate: Date;       // リリース日
+  tooltip: string;         // ツールチップに表示する情報
 }
 
 /**
@@ -78,12 +91,24 @@ export function getAllPeriodsForDate(date: Date, sprintPeriods: SprintPeriod[]):
   for (const sprint of sortedPeriods) {
     const type = getCurrentPeriodType(date, sprint);
     if (type !== 'none') {
-      const releaseDate = sprint.releaseDate;
-      const sprintId = `Sprint-${releaseDate.getFullYear()}/${releaseDate.getMonth() + 1}/${releaseDate.getDate()}`;
-      
       // 既に3つの期間が登録されている場合はスキップ
       if (results.length >= 3) {
         continue;
+      }
+      
+      // 期間情報を作成
+      const releaseDate = sprint.releaseDate;
+      const releaseDateStr = `${releaseDate.getFullYear()}/${String(releaseDate.getMonth() + 1).padStart(2, '0')}/${String(releaseDate.getDate()).padStart(2, '0')}`;
+      const sprintId = `Sprint-${releaseDateStr}`;
+      
+      // ツールチップ情報を作成
+      let tooltip = `${releaseDateStr}リリースのスプリント - `;
+      if (type === 'development') {
+        tooltip += '開発期間';
+      } else if (type === 'qa') {
+        tooltip += 'QA期間';
+      } else if (type === 'release') {
+        tooltip += 'リリース日';
       }
       
       // 同じスプリントIDの期間が既に登録されている場合は更新
@@ -94,7 +119,8 @@ export function getAllPeriodsForDate(date: Date, sprintPeriods: SprintPeriod[]):
           results[existingIndex] = {
             type,
             sprintId,
-            startDate: sprint.developmentStart
+            releaseDate: sprint.releaseDate,
+            tooltip
           };
         }
       } else {
@@ -102,14 +128,22 @@ export function getAllPeriodsForDate(date: Date, sprintPeriods: SprintPeriod[]):
         results.push({
           type,
           sprintId,
-          startDate: sprint.developmentStart
+          releaseDate: sprint.releaseDate,
+          tooltip
         });
       }
     }
   }
   
-  // 期間の重なりを考慮して並び替え
+  // 期間の重なりを考慮して並び替え（リリース日の昇順、同じリリース日の場合は期間タイプの優先度順）
   results.sort((a, b) => {
+    // まずリリース日で比較
+    const dateCompare = a.releaseDate.getTime() - b.releaseDate.getTime();
+    if (dateCompare !== 0) {
+      return dateCompare;
+    }
+    
+    // 同じリリース日の場合は期間タイプで比較
     const typeOrder = {
       development: 0,
       qa: 1,
@@ -139,23 +173,12 @@ export function calculateSprintPeriods(startDate: Date, devDays: number, qaDays:
   // QA期間の終了日はQA開始日 + QA日数 - 1
   const qaEnd = addDays(qaStart, qaDays - 1);
   
-  // スプリント開始曜日を取得
-  const startDayOfWeek = getDayOfWeek(startDate);
+  // リリース日はQA期間終了日の翌日
+  const releaseDate = addDays(qaEnd, 1);
   
-  // リリース日はQA期間終了後の直近のスプリント開始曜日
-  // QA期間終了日自体が開始曜日と同じ曜日である場合は、その日をリリース日にする
-  let releaseDate: Date;
-  if (getDayOfWeek(qaEnd) === startDayOfWeek) {
-    releaseDate = new Date(qaEnd);
-  } else {
-    // QA期間終了日の翌日から直近の開始曜日を探す
-    const dayAfterQaEnd = addDays(qaEnd, 1);
-    releaseDate = getNearestDayOfWeek(startDayOfWeek, dayAfterQaEnd, true);
-  }
-  
-  // 次のスプリント開始日は現在のスプリントの開発期間の半分の時点
-  const nextSprintStartOffset = Math.floor(devDays / 2);
-  const nextSprintStart = addDays(startDate, nextSprintStartOffset);
+  // スプリントIDを生成
+  const releaseDateStr = `${releaseDate.getFullYear()}/${String(releaseDate.getMonth() + 1).padStart(2, '0')}/${String(releaseDate.getDate()).padStart(2, '0')}`;
+  const sprintId = `Sprint-${releaseDateStr}`;
   
   return {
     developmentStart: startDate,
@@ -163,7 +186,7 @@ export function calculateSprintPeriods(startDate: Date, devDays: number, qaDays:
     qaStart,
     qaEnd,
     releaseDate,
-    nextSprintStart
+    sprintId
   };
 }
 
@@ -180,14 +203,16 @@ export function getNextNSprints(startDate: Date, devDays: number, qaDays: number
   let currentStartDate = new Date(startDate);
   
   for (let i = 0; i < count; i++) {
+    // スプリント開始曜日を取得
+    const startDayOfWeek = getDayOfWeek(currentStartDate);
+    
+    // スプリント期間を計算
     const period = calculateSprintPeriods(currentStartDate, devDays, qaDays);
     periods.push(period);
     
-    // スプリントIDを設定
-    period.sprintId = `Sprint-${period.releaseDate.getFullYear()}/${period.releaseDate.getMonth() + 1}/${period.releaseDate.getDate()}`;
-    
-    // 次のスプリントの開始日を設定
-    currentStartDate = period.nextSprintStart;
+    // 次のスプリントの開始日を計算
+    // README.mdの例に基づいて、次のスプリントは前のスプリントのQA開始日と同じ日に開発を開始する
+    currentStartDate = new Date(period.qaStart);
   }
   
   return periods;
@@ -204,30 +229,25 @@ export function getNextNSprints(startDate: Date, devDays: number, qaDays: number
 export function getPreviousNSprints(startDate: Date, devDays: number, qaDays: number, count: number): SprintPeriod[] {
   const periods: SprintPeriod[] = [];
   
-  // 開発期間の半分の日数を計算
-  const halfDevDays = Math.floor(devDays / 2);
+  // 過去のスプリントを逆算
+  let previousStartDate = new Date(startDate);
   
-  // 最初のスプリントの開始日を計算
-  let firstStartDate = new Date(startDate);
+  // 現在のスプリントを計算
+  const currentSprint = calculateSprintPeriods(startDate, devDays, qaDays);
+  periods.push(currentSprint);
   
-  // count回分のスプリントを逆算
-  for (let i = 0; i < count; i++) {
-    firstStartDate = addDays(firstStartDate, -halfDevDays);
-  }
-  
-  // 最初のスプリントから順に計算
-  let currentStartDate = firstStartDate;
-  for (let i = 0; i < count; i++) {
-    const period = calculateSprintPeriods(currentStartDate, devDays, qaDays);
+  // 過去のスプリントを計算
+  for (let i = 1; i < count; i++) {
+    // 前のスプリントの開発開始日を計算
+    // 1週間ごとにスプリントが開始される場合、7日前が前のスプリントの開発開始日
+    previousStartDate = addDays(previousStartDate, -7);
     
-    // スプリントIDを設定
-    period.sprintId = `Sprint-${period.releaseDate.getFullYear()}/${period.releaseDate.getMonth() + 1}/${period.releaseDate.getDate()}`;
-    
+    const period = calculateSprintPeriods(previousStartDate, devDays, qaDays);
     periods.push(period);
-    
-    // 次のスプリントの開始日を設定
-    currentStartDate = period.nextSprintStart;
   }
+  
+  // リリース日の昇順でソート
+  periods.sort((a, b) => a.releaseDate.getTime() - b.releaseDate.getTime());
   
   return periods;
 }
@@ -258,9 +278,9 @@ export function getCurrentPeriodType(date: Date, sprintPeriod: SprintPeriod): Pe
   const releaseDate = new Date(sprintPeriod.releaseDate);
   releaseDate.setHours(0, 0, 0, 0);
   
-  // 開発期間内かどうか
-  if (targetDate >= devStart && targetDate <= devEnd) {
-    return 'development';
+  // リリース日かどうか（最優先）
+  if (isSameDay(targetDate, releaseDate)) {
+    return 'release';
   }
   
   // QA期間内かどうか
@@ -268,9 +288,9 @@ export function getCurrentPeriodType(date: Date, sprintPeriod: SprintPeriod): Pe
     return 'qa';
   }
   
-  // リリース日かどうか
-  if (isSameDay(targetDate, releaseDate)) {
-    return 'release';
+  // 開発期間内かどうか
+  if (targetDate >= devStart && targetDate <= devEnd) {
+    return 'development';
   }
   
   return 'none';

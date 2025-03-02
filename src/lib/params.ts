@@ -18,9 +18,9 @@ export interface CalendarConfig {
  * デフォルトのカレンダー設定
  */
 const DEFAULT_CONFIG: CalendarConfig = {
-  startDayOfWeek: 1,     // デフォルトは月曜日
-  developmentDays: 10,   // デフォルトの開発期間は10日
-  qaDays: 5,             // デフォルトのQA期間は5日
+  startDayOfWeek: 2,     // デフォルトは火曜日
+  developmentDays: 7,   // デフォルトの開発期間は7日
+  qaDays: 7,             // デフォルトのQA期間は7日
   displayMonths: 3,      // デフォルトの表示月数は3ヶ月
   centerDate: new Date() // デフォルトでは今日を中央に表示
 };
