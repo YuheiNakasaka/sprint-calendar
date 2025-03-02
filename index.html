@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スプリント早わかりカレンダー</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <meta name="description" content="アジャイル開発における各スプリントの期間（開発期間、QA期間、リリース日）を視覚的に表示するWebアプリケーション">
+  <link rel="stylesheet" href="/src/styles/main.css">
+</head>
+
+<body>
+  <header>
+    <h1>スプリント早わかりカレンダー</h1>
+    <div class="settings-panel">
+      <form id="settings-form">
+        <div class="form-group">
+          <label for="start-date">スプリント開始日:</label>
+          <input type="date" id="start-date" name="start-date" required>
+        </div>
+        <div class="form-group">
+          <label for="dev-days">開発期間（日数）:</label>
+          <input type="number" id="dev-days" name="dev-days" min="1" max="30" required>
+        </div>
+        <div class="form-group">
+          <label for="qa-days">QA期間（日数）:</label>
+          <input type="number" id="qa-days" name="qa-days" min="1" max="30" required>
+        </div>
+        <div class="form-group">
+          <label for="display-months">表示月数:</label>
+          <input type="number" id="display-months" name="display-months" min="1" max="12" value="3" required>
+        </div>
+        <button type="submit">適用</button>
+      </form>
+    </div>
+  </header>
+
+  <main>
+    <section class="legend">
+      <div class="legend-item">
+        <span class="color-box development"></span>
+        <span>開発期間</span>
+      </div>
+      <div class="legend-item">
+        <span class="color-box qa"></span>
+        <span>QA期間</span>
+      </div>
+      <div class="legend-item">
+        <span class="color-box release"></span>
+        <span>リリース日</span>
+      </div>
+      <div class="legend-item">
+        <span class="color-box today"></span>
+        <span>今日</span>
+      </div>
+    </section>
+
+    <section id="calendar-container" class="calendar-container">
+      <!-- カレンダーがここに動的に生成されます -->
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2025 スプリント早わかりカレンダー</p>
+  </footer>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>
