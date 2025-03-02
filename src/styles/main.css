@@ -6,7 +6,7 @@
   --color-text: #333;
   --color-background: #fff;
   --color-border: #ddd;
-  --font-family: 'Helvetica Neue', Arial, sans-serif;
+  --font-family: "Helvetica Neue", Arial, sans-serif;
 }
 
 * {
@@ -226,7 +226,7 @@ button:hover {
 }
 
 .day.today::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -295,11 +295,11 @@ footer {
   body {
     padding: 10px;
   }
-  
+
   .calendar-month {
     min-width: 100%;
   }
-  
+
   .day {
     height: 50px;
   }
