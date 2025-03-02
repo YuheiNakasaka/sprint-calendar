@@ -102,7 +102,7 @@ export function getAllPeriodsForDate(date: Date, sprintPeriods: SprintPeriod[]):
       const sprintId = `Sprint-${releaseDateStr}`;
       
       // ツールチップ情報を作成
-      let tooltip = `${releaseDateStr}リリースのスプリント - `;
+      let tooltip = `${releaseDateStr}リリース - `;
       if (type === 'development') {
         tooltip += '開発期間';
       } else if (type === 'qa') {
