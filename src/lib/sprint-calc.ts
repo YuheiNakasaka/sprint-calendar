@@ -71,32 +71,51 @@ export interface PeriodInfo {
 export function getAllPeriodsForDate(date: Date, sprintPeriods: SprintPeriod[]): PeriodInfo[] {
   const results: PeriodInfo[] = [];
   
-  sprintPeriods.forEach((sprint, index) => {
+  // リリース日の昇順でソート
+  const sortedPeriods = [...sprintPeriods].sort((a, b) => a.releaseDate.getTime() - b.releaseDate.getTime());
+  
+  // 各スプリントの期間をチェック
+  for (const sprint of sortedPeriods) {
     const type = getCurrentPeriodType(date, sprint);
     if (type !== 'none') {
-      // リリース日を基準にしたスプリントIDを生成
       const releaseDate = sprint.releaseDate;
       const sprintId = `Sprint-${releaseDate.getFullYear()}/${releaseDate.getMonth() + 1}/${releaseDate.getDate()}`;
       
-      results.push({
-        type,
-        sprintId,
-        startDate: sprint.developmentStart
-      });
+      // 既に3つの期間が登録されている場合はスキップ
+      if (results.length >= 3) {
+        continue;
+      }
+      
+      // 同じスプリントIDの期間が既に登録されている場合は更新
+      const existingIndex = results.findIndex(r => r.sprintId === sprintId);
+      if (existingIndex !== -1) {
+        // 既存の期間を新しい期間で上書き（優先度の高い期間を保持）
+        if (type === 'release' || (type === 'qa' && results[existingIndex].type === 'development')) {
+          results[existingIndex] = {
+            type,
+            sprintId,
+            startDate: sprint.developmentStart
+          };
+        }
+      } else {
+        // 新しい期間を追加
+        results.push({
+          type,
+          sprintId,
+          startDate: sprint.developmentStart
+        });
+      }
     }
-  });
+  }
   
   // 期間の重なりを考慮して並び替え
-  // 開発期間を先に、QA期間を後に表示
   results.sort((a, b) => {
-    // 'none'は含まれないことが保証されているため、as constで型を制限
     const typeOrder = {
       development: 0,
       qa: 1,
       release: 2
     } as const;
     
-    // 型アサーションを使用して安全に比較
     return typeOrder[a.type as keyof typeof typeOrder] - typeOrder[b.type as keyof typeof typeOrder];
   });
   
@@ -124,12 +143,18 @@ export function calculateSprintPeriods(startDate: Date, devDays: number, qaDays:
   const startDayOfWeek = getDayOfWeek(startDate);
   
   // リリース日はQA期間終了後の直近のスプリント開始曜日
-  const dayAfterQaEnd = addDays(qaEnd, 1);
-  const releaseDate = getNearestDayOfWeek(startDayOfWeek, dayAfterQaEnd, true);
+  // QA期間終了日自体が開始曜日と同じ曜日である場合は、その日をリリース日にする
+  let releaseDate: Date;
+  if (getDayOfWeek(qaEnd) === startDayOfWeek) {
+    releaseDate = new Date(qaEnd);
+  } else {
+    // QA期間終了日の翌日から直近の開始曜日を探す
+    const dayAfterQaEnd = addDays(qaEnd, 1);
+    releaseDate = getNearestDayOfWeek(startDayOfWeek, dayAfterQaEnd, true);
+  }
   
-  // 次のスプリント開始日は現在のスプリントの開発期間中に開始
-  // 開発期間の途中（例：開発期間の後半）で次のスプリントを開始
-  const nextSprintStartOffset = Math.floor(devDays / 2); // 開発期間の半分の時点
+  // 次のスプリント開始日は現在のスプリントの開発期間の半分の時点
+  const nextSprintStartOffset = Math.floor(devDays / 2);
   const nextSprintStart = addDays(startDate, nextSprintStartOffset);
   
   return {
@@ -154,18 +179,15 @@ export function getNextNSprints(startDate: Date, devDays: number, qaDays: number
   const periods: SprintPeriod[] = [];
   let currentStartDate = new Date(startDate);
   
-  // 開発期間の半分の日数を計算
-  const nextSprintOffset = Math.floor(devDays / 2);
-  
   for (let i = 0; i < count; i++) {
     const period = calculateSprintPeriods(currentStartDate, devDays, qaDays);
     periods.push(period);
     
-    // 次のスプリートの開始日を現在のスプリントの開発期間の半分の時点に設定
-    currentStartDate = addDays(currentStartDate, nextSprintOffset);
-    
     // スプリントIDを設定
     period.sprintId = `Sprint-${period.releaseDate.getFullYear()}/${period.releaseDate.getMonth() + 1}/${period.releaseDate.getDate()}`;
+    
+    // 次のスプリントの開始日を設定
+    currentStartDate = period.nextSprintStart;
   }
   
   return periods;
@@ -183,22 +205,28 @@ export function getPreviousNSprints(startDate: Date, devDays: number, qaDays: nu
   const periods: SprintPeriod[] = [];
   
   // 開発期間の半分の日数を計算
-  const sprintOffset = Math.floor(devDays / 2);
+  const halfDevDays = Math.floor(devDays / 2);
   
   // 最初のスプリントの開始日を計算
-  let currentStartDate = new Date(startDate);
-  currentStartDate = addDays(currentStartDate, -sprintOffset * count);
+  let firstStartDate = new Date(startDate);
   
+  // count回分のスプリントを逆算
+  for (let i = 0; i < count; i++) {
+    firstStartDate = addDays(firstStartDate, -halfDevDays);
+  }
+  
+  // 最初のスプリントから順に計算
+  let currentStartDate = firstStartDate;
   for (let i = 0; i < count; i++) {
     const period = calculateSprintPeriods(currentStartDate, devDays, qaDays);
     
     // スプリントIDを設定
     period.sprintId = `Sprint-${period.releaseDate.getFullYear()}/${period.releaseDate.getMonth() + 1}/${period.releaseDate.getDate()}`;
     
-    periods.unshift(period); // 配列の先頭に追加して時系列順にする
+    periods.push(period);
     
-    // 次のスプリートの開始日を計算
-    currentStartDate = addDays(currentStartDate, sprintOffset);
+    // 次のスプリントの開始日を設定
+    currentStartDate = period.nextSprintStart;
   }
   
   return periods;
