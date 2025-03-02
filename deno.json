@@ -1,0 +1,31 @@
+{
+  "name": "sprint-calendar",
+  "version": "1.0.0",
+  "description": "アジャイル開発のスプリント期間を視覚的に表示するカレンダーアプリ",
+  "imports": {
+    "@std/testing/bdd": "jsr:@std/testing@^0.218.2/bdd",
+    "@std/expect": "jsr:@std/expect@^0.218.2"
+  },
+  "tasks": {
+    "dev": "deno run --allow-net --allow-read --watch src/server.ts",
+    "start": "deno run --allow-net --allow-read src/server.ts",
+    "test": "deno test --allow-net",
+    "test:watch": "deno test --allow-net --watch",
+    "test:cov": "deno test --coverage=coverage && deno coverage coverage"
+  },
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true
+  },
+  "fmt": {
+    "indentWidth": 2,
+    "singleQuote": true,
+    "semiColons": true
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"]
+    }
+  }
+}
